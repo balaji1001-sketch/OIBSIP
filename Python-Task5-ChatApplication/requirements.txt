@@ -1,0 +1,2 @@
+# No third-party dependencies — everything used (socket, threading, sqlite3,
+# tkinter, json, hashlib) is in the Python standard library.

@@ -1,0 +1,17 @@
+Objective: Build a real-time messaging application in Python. Beginners implement a two-user command-line chat via sockets; advanced builds a full GUI application with multiple rooms, authentication, and message history.
+Tech Stack — Beginner: Python, socket, threading Tech Stack — Advanced: Python, socket/asyncio or Flask-SocketIO, tkinter or a web framework, sqlite3 for message history
+Feature Checklist — Beginner Tier:
+[ ] Server script that listens for incoming client connections
+[ ] Client script that connects to the server
+[ ] Real-time, bidirectional message exchange between two connected clients
+[ ] Messages displayed with a timestamp prefix (e.g., [14:35] Alice: Hello)
+[ ] Graceful disconnection handling: notify the other client when one disconnects
+[ ] Both scripts runnable on the same machine (using localhost)
+Feature Checklist — Advanced Tier (includes all Beginner features, plus):
+[ ] GUI chat window built with tkinter or served as a web app using Flask
+[ ] User registration and login (username + password, stored in SQLite)
+[ ] Multiple chat rooms: users can create or join named rooms
+[ ] Message history: past messages in a room are loaded when a user joins
+[ ] Desktop or in-app notification for new messages when the window is not focused
+[ ] Emoji support: render common emoji shortcodes (e.g., :smile:) as Unicode characters
+[ ] End-to-end awareness: README must document how messages are stored and what is not encrypted (security transparency)

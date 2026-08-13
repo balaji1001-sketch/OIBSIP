@@ -1,0 +1,6 @@
+chat.db
+chat.db-journal
+chat.db-wal
+chat.db-shm
+__pycache__/
+*.pyc
