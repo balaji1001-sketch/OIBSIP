@@ -86,6 +86,7 @@ class ChatServer:
             "login": self._handle_login,
             "list_rooms": self._handle_list_rooms,
             "create_room": self._handle_create_room,
+            "delete_room": self._handle_delete_room,
             "join_room": self._handle_join_room,
             "leave_room": self._handle_leave_room,
             "send_message": self._handle_send_message,
@@ -138,6 +139,34 @@ class ChatServer:
             "type": "room_created", "ok": ok, "room": room,
             "error": None if ok else "That room already exists.",
         })
+
+    def _handle_delete_room(self, session, message):
+        if not self._require_login(session):
+            return
+        room = (message.get("room") or "").strip()
+        ok, error = self.db.delete_room(room, requester=session.username)
+        if not ok:
+            session.send({"type": "room_deleted", "ok": False, "room": room, "error": error})
+            return
+
+        with self.rooms_lock:
+            members = list(self.rooms.pop(room, ()))
+        room_list = self.db.list_rooms()
+        notified = set()
+        for member in members:
+            member.rooms.discard(room)
+            member.send({
+                "type": "system", "room": room,
+                "text": f"Room '{room}' was deleted by {session.username}.",
+                "timestamp": _now(),
+            })
+            member.send({"type": "room_deleted", "ok": True, "room": room, "error": None})
+            member.send({"type": "room_list", "rooms": room_list})
+            notified.add(member)
+        self._broadcast_room_list()
+        if session not in notified:
+            session.send({"type": "room_deleted", "ok": True, "room": room, "error": None})
+            session.send({"type": "room_list", "rooms": room_list})
 
     def _handle_join_room(self, session, message):
         if not self._require_login(session):

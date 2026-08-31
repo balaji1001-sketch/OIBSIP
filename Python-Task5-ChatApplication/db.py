@@ -125,6 +125,27 @@ class Database:
         except sqlite3.IntegrityError:
             return False
 
+    def delete_room(self, room, requester):
+        """Delete a room and its message history.
+
+        Returns (ok, error). Fails if the room doesn't exist, is the default
+        room, or wasn't created by `requester`.
+        """
+        if room == DEFAULT_ROOM:
+            return False, f"The '{DEFAULT_ROOM}' room can't be deleted."
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT created_by FROM rooms WHERE name = ?", (room,)
+            ).fetchone()
+            if row is None:
+                return False, f"Room '{room}' doesn't exist."
+            if row["created_by"] != requester:
+                return False, "Only the room's creator can delete it."
+            self._conn.execute("DELETE FROM messages WHERE room = ?", (room,))
+            self._conn.execute("DELETE FROM rooms WHERE name = ?", (room,))
+            self._conn.commit()
+        return True, None
+
     def list_rooms(self):
         with self._lock:
             rows = self._conn.execute("SELECT name FROM rooms ORDER BY name").fetchall()

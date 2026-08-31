@@ -12,7 +12,7 @@ import queue
 import socket
 import threading
 import tkinter as tk
-from tkinter import scrolledtext, simpledialog, ttk
+from tkinter import messagebox, scrolledtext, simpledialog, ttk
 
 import protocol
 
@@ -229,9 +229,18 @@ class ChatClientApp:
         main.rowconfigure(2, weight=1)
         main.columnconfigure(0, weight=1)
 
+        header = ttk.Frame(main)
+        header.grid(row=0, column=0, sticky="ew")
+        header.columnconfigure(0, weight=1)
+
         self.room_title_var = tk.StringVar(value="Select or create a room to get started")
-        ttk.Label(main, textvariable=self.room_title_var, style="Title.TLabel", font=("Segoe UI", 14, "bold")).grid(
-            row=0, column=0, sticky="w")
+        ttk.Label(header, textvariable=self.room_title_var, style="Title.TLabel",
+                  font=("Segoe UI", 14, "bold")).grid(row=0, column=0, sticky="w")
+
+        self.delete_room_btn = ttk.Button(header, text="🗑 Delete Room", style="Secondary.TButton",
+                                          command=self._on_delete_room)
+        self.delete_room_btn.grid(row=0, column=1, sticky="e")
+        self.delete_room_btn.grid_remove()
 
         self.chat_error_var = tk.StringVar(value="")
         self.chat_error_label = tk.Label(main, textvariable=self.chat_error_var, bg=COLORS["danger_bg"],
@@ -268,10 +277,27 @@ class ChatClientApp:
         if room and room.strip():
             self._send({"type": "create_room", "room": room.strip()})
 
+    def _on_delete_room(self):
+        room = self.active_room
+        if not room:
+            return
+        if not messagebox.askyesno(
+            "Delete Room",
+            f"Delete room '{room}' and all of its messages?\n\n"
+            "This can't be undone. Only works if you created the room.",
+            parent=self.root,
+        ):
+            return
+        self._send({"type": "delete_room", "room": room})
+
     def _on_room_selected(self, room):
         self.active_room = room
         self.unread_counts[room] = 0
         self.room_title_var.set(f"# {room}")
+        if room == "general":
+            self.delete_room_btn.grid_remove()
+        else:
+            self.delete_room_btn.grid()
         self._render_room_list()
         self._redraw_log()
 
@@ -320,6 +346,7 @@ class ChatClientApp:
             "auth_result": self._handle_auth_result,
             "room_list": self._handle_room_list,
             "room_created": self._handle_room_created,
+            "room_deleted": self._handle_room_deleted,
             "joined_room": self._handle_joined_room,
             "message": self._handle_chat_message,
             "system": self._handle_system_message,
@@ -337,6 +364,22 @@ class ChatClientApp:
     def _handle_room_created(self, message):
         if not message.get("ok"):
             self._show_chat_error(message.get("error") or "Couldn't create that room.")
+
+    def _handle_room_deleted(self, message):
+        if not message.get("ok"):
+            self._show_chat_error(message.get("error") or "Couldn't delete that room.")
+            return
+        room = message["room"]
+        self.joined_rooms.discard(room)
+        self.room_history.pop(room, None)
+        self.unread_counts.pop(room, None)
+        if self.active_room == room:
+            self.active_room = None
+            self.room_title_var.set("Select or create a room to get started")
+            self.delete_room_btn.grid_remove()
+            self.message_entry.state(["disabled"])
+            self._redraw_log()
+        self._render_room_list()
 
     def _handle_joined_room(self, message):
         room = message["room"]

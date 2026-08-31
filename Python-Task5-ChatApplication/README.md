@@ -22,6 +22,9 @@ server/client pair satisfies both):
 - Username + password accounts stored in SQLite, passwords hashed with
   PBKDF2-HMAC-SHA256 and a random per-user salt (never stored in plaintext)
 - Multiple named chat rooms — create or join any room from the sidebar
+- Delete a room you created (the **🗑 Delete Room** button in the chat
+  header) — removes the room and its message history and drops everyone
+  still in it back to the room picker; the `general` room can't be deleted
 - Message history: the last 50 messages in a room are sent to you the
   moment you join it
 - In-app notification: when the window loses focus, new messages badge the
@@ -84,8 +87,9 @@ Python-Task5-ChatApplication/
 
 Every message is one JSON object per line (`{"type": ..., ...}\n`) sent
 over a plain TCP socket. Client requests: `register`, `login`,
-`list_rooms`, `create_room`, `join_room`, `leave_room`, `send_message`.
-Server pushes: `auth_result`, `room_list`, `room_created`, `joined_room`
+`list_rooms`, `create_room`, `delete_room`, `join_room`, `leave_room`,
+`send_message`.
+Server pushes: `auth_result`, `room_list`, `room_created`, `room_deleted`, `joined_room`
 (includes history + current members), `message`, `system` (join/leave/
 disconnect notices), `error`.
 
